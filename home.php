@@ -1,10 +1,9 @@
 <?php
 include 'database.php';
+
+// $userId ;
+session_start();
 require_once 'showTaskFunction.php';
-
-$userId = 0;
-
-
 
 if (!$_SESSION['userid']) {
   header('location: index.php');
@@ -47,7 +46,7 @@ $userId = $_SESSION['userid'];
       </div>
       <div class="col-2">
         <form action="logout.php" class="col " method="post">
-        <input class="btn btn-dark" type="submit" value="Logout">
+          <input class="btn btn-dark" type="submit" value="Logout">
         </form>
       </div>
     </div>
@@ -59,29 +58,83 @@ $userId = $_SESSION['userid'];
         <a class="w-50 btn btn-primary btn-lg btn-block" href="addTask.php" role="button">Add Task</a>
       </div>
       <div class="col-2 my-4">
-       <form action="showLebel.php" class="col-2 " method="post">
-        <input class="btn btn-info btn-lg" type="submit" value="Lebels">
-       </form>
+        <form action="showLebel.php" class="col-2 " method="post">
+          <input class="btn btn-info btn-lg" type="submit" value="Lebels">
+        </form>
       </div>
     </div>
   </div>
 
-  
+
 
 
   <?php
 
-  $today = date('Y-m-d');
-  $taskShowQuery =  "SELECT * FROM tasks WHERE user_id = $userId";
-  $listOfTodo = $connection->query($taskShowQuery);
+  
 
-  if ($listOfTodo->num_rows == 0) {
+  // $taskShowQuery =  "SELECT * FROM tasks WHERE user_id = $userId";
+  // $listOfTodo = $connection->query($taskShowQuery);
+
+
+//   SELECT Customers.CustomerName, Orders.OrderID
+// FROM Customers
+// LEFT JOIN Orders ON Customers.CustomerID = Orders.CustomerID
+// ORDER BY Customers.CustomerName;
+  
+
+  $taskShowQuery = "SELECT 
+  tasks.id as task_id,
+  tasks.name as task_name,
+  tasks.user_id, 
+  tasks.date, 
+  tasks.lebel_id as lebel_id, 
+  tasks.priority,
+  FROM tasks 
+  JOIN lebels
+  ON tasks.lebel_id =  lebels.id
+  WHERE tasks.user_id = $userId";
+
+  $listOfTodo = $connection->query($taskShowQuery);
+  var_dump($listOfTodo);
+
+
+  foreach($listOfTodo as $row)
+  {
+    echo $row['name'];
+  }
+
+  die();
+
+
+
+
+// SELECT column_name(s)
+// FROM table1
+// LEFT JOIN table2
+// ON table1.column_name = table2.column_name;
+
+    // $colorCode = "#eedebf";
+    // $lebelName = "Daily";
+
+  // var_dump($listOfTodo);
+  // $listOfTodo['id'];
+
+  //  var_dump($listOfTodo);
+  
+
+  // } else {
+  //   $colorCode = $listOfLebel['color_code'];
+  //   $lebelName = $listOfLebel['name'];
+  // }
+  // var_dump($listOfTodo);
+
+  if (empty($listOfTodo)) {
   ?>
     <h1 class="m-auto text-center">No Task</h1>
   <?php
   } else {
   ?>
-    <!-- <input type="submit" class="btn btn-danger" name="bulk_delete_submit" onclick="return confirm('Are you sure?')" value="Delete"/> -->
+   
 
 
     <div class="container">
@@ -101,57 +154,111 @@ $userId = $_SESSION['userid'];
 
         <div class="w-100">
           <?php
-          $ok = false;
+
+          $today = date('Y-m-d');
+          $todayTask = [];
+          $upComingTask = [];
+          $overDueTask = [];
+
           foreach ($listOfTodo as $row) {
-            $id = $row['id'];
-            $date = $row['date'];
 
-            if ($date == $today) {
-              if ($ok == false) {
-          ?>
-          <h4>Today Tasks</h4>
-              <?php
-                $ok = true;
-              }
-
-              showTask($id);
+            if ($row['date'] == $today) {
+              $todayTask[] = $row;
+            }
+            else if($row['date'] > $today )
+            {
+              $upComingTask[] = $row;
+            }
+            else
+            {
+              $overDueTask[] = $row;
             }
           }
 
-          $ok = false;
+          if (!empty($todayTask)) {
+            ?>
 
-          foreach ($listOfTodo as $row) {
-            $id = $row['id'];
-            $date = $row['date'];
-
-            if ($date > $today) {
-              if ($ok == false) {
-              ?>
-              <h4>Upcoming Tasks</h4>
-              <?php
-                $ok = true;
-              }
-              showTask($id);
-            }
-          }
-
-
-          $ok = false;
-          foreach ($listOfTodo as $row) {
-            $id = $row['id'];
-            $date = $row['date'];
-
-            if ($date < $today) {
-              if ($ok == false) {
-              ?>
-              <h4>Overdue Tasks</h4>
+          <h4>Today Task</h4>
           <?php
-                $ok = true;
-              }
-              showTask($id);
-            }
           }
 
+          echo count($todayTask);
+
+          foreach($todayTask as $row)
+          {
+
+            $taskId = $row['id'];
+            $taskName = $row['name'];
+            $priority = $row['priority'];
+            $date = $row['date'];
+            $lebelId = $row['lebel_id'];
+            $lebelQuery = "SELECT * FROM lebels WHERE id = $lebelId";
+            $listOfLebel = $connection->query($lebelQuery)->fetch_assoc();
+            $colorCode = "#a0db8e";
+            $lebelName = "Regular";
+
+
+            if(!empty($listOfLebel)) {
+              $colorCode =  $listOfLebel['color_code'];
+              $lebelName =  $listOfLebel['name'];
+            }
+            showTask($taskId,$taskName,$date,$priority,$lebelName,$colorCode);
+
+          }
+
+          if (!empty($upComingTask)) {
+            ?>
+          <h4>Upcoming Task</h4>
+          <?php
+          }
+
+          foreach($upComingTask as $row)
+          {
+
+            $taskId = $row['id'];
+            $taskName = $row['name'];
+            $priority = $row['priority'];
+            $date = $row['date'];
+            $lebelId = $row['lebel_id'];
+            $lebelQuery = "SELECT * FROM lebels WHERE id = $lebelId";
+            $listOfLebel = $connection->query($lebelQuery)->fetch_assoc();
+            $colorCode = "#a0db8e";
+            $lebelName = "Regular";
+
+            if(!empty($listOfLebel)) {
+              $colorCode =  $listOfLebel['color_code'];
+              $lebelName =  $listOfLebel['name'];
+            }
+            
+            showTask($taskId,$taskName,$date,$priority,$lebelName,$colorCode);
+             
+          }
+          if (!empty($overDueTask)) {
+            ?>
+          <h4>Over Due Task</h4>
+          <?php
+          }
+        
+          foreach($overDueTask as $row)
+          {
+            $taskId = $row['id'];
+            $taskName = $row['name'];
+            $priority = $row['priority'];
+            $date = $row['date'];
+            $lebelId = $row['lebel_id'];
+            $lebelQuery = "SELECT * FROM lebels WHERE id = $lebelId";
+            $listOfLebel = $connection->query($lebelQuery)->fetch_assoc();
+            $colorCode = "#a0db8e";
+            $lebelName = "Regular";
+
+
+            if(!empty($listOfLebel)) {
+              $colorCode =  $listOfLebel['color_code'];
+              $lebelName =  $listOfLebel['name'];
+            }
+            showTask($taskId,$taskName,$date,$priority,$lebelName,$colorCode);
+             
+          }
           ?>
         </div>
       </form>

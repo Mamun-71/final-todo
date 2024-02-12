@@ -1,6 +1,7 @@
 <?php
 include 'database.php';
 
+
 session_start();
 
 if(!$_SESSION['userid'])
